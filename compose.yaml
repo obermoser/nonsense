@@ -10,5 +10,47 @@ services:
       POSTGRES_DB: local
     volumes:
       - pgdata:/var/lib/postgresql
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    depends_on:
+      - db
+    ports:
+      # no login required, so only expose on localhost
+      - 127.0.0.1:5050:80
+    environment:
+      # required by the image, but unused because SERVER_MODE is off
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      PGADMIN_DISABLE_POSTFIX: 'True'
+      PGPASS_FILE: /pgadmin4/pgpass
+    configs:
+      - source: pgadmin_servers
+        target: /pgadmin4/servers.json
+      - source: pgadmin_pgpass
+        target: /pgadmin4/pgpass
 volumes:
   pgdata:
+configs:
+  pgadmin_servers:
+    content: |
+      {
+        "Servers": {
+          "1": {
+            "Name": "local",
+            "Group": "Servers",
+            "Host": "db",
+            "Port": 5432,
+            "MaintenanceDB": "local",
+            "Username": "root",
+            "ConnectionParameters": {
+              "sslmode": "prefer",
+              "passfile": "/var/lib/pgadmin/.pgpass"
+            }
+          }
+        }
+      }
+  pgadmin_pgpass:
+    content: db:5432:*:root:mysecretpassword
